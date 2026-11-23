@@ -55,15 +55,14 @@
 
          ; exec one instruction
          (exec (lambda (instr)
-                 (let ((args (cdr instr)))
-                   (case (car instr)
-                     ((snd) (snd args))
-                     ((set) (set args))
-                     ((add) (add args))
-                     ((mul) (mul args))
-                     ((mod) (mod args))
-                     ((rcv) (rcv args))
-                     ((jgz) (jgz args)))))))
+                 (case (car instr)
+                   ((snd) (snd (cdr instr)))
+                   ((set) (set (cdr instr)))
+                   ((add) (add (cdr instr)))
+                   ((mul) (mul (cdr instr)))
+                   ((mod) (mod (cdr instr)))
+                   ((rcv) (rcv (cdr instr)))
+                   ((jgz) (jgz (cdr instr)))))))
 
     ; execute program
     (let loop ()

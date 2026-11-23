@@ -44,16 +44,6 @@
 			        (val (second x))
 				1))))
 
-         ; instruction list
-         (insns
-           (list (cons 'snd snd)
-                 (cons 'set set)
-                 (cons 'add add)
-                 (cons 'mul mul)
-                 (cons 'mod mod)
-                 (cons 'rcv rcv)
-                 (cons 'jgz jgz)))
-
          (debug-print (lambda ()
                         (let ((pos (reg PC)))
                           (display pos)
@@ -65,7 +55,15 @@
 
          ; exec one instruction
          (exec (lambda (instr)
-                 ((cdr (assoc (car instr) insns)) (cdr instr)))))
+		 (let ((args (cdr instr)))
+		   (case (car instr)
+		     ((snd) (snd args))
+		     ((set) (set args))
+		     ((add) (add args))
+		     ((mul) (mul args))
+		     ((mod) (mod args))
+		     ((rcv) (rcv args))
+		     ((jgz) (jgz args)))))))
 
     ; execute program
     (let loop ()

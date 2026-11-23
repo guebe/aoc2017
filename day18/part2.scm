@@ -5,7 +5,7 @@
 (define PC 'x) ; program counter
 
 ; registers are stored in a vector - this function provides the mapping
-(define (reg->idx sym) (- (char->integer (string-ref (symbol->string sym) 0)) 97))
+(define (reg->idx sym) (- (char->integer (string-ref (symbol->string sym) 0)) (char->integer #\a)))
 
 (define (cpu-instr prog state recv debug)
   (define send '())

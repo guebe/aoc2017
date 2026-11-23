@@ -2,7 +2,7 @@
 (define second cadr)
 
 ; special registers
-(define PC 'x)  ; program counter
+(define PC 'x) ; program counter
 
 ; registers are stored in a vector - this function provides the mapping
 (define (reg->idx sym) (- (char->integer (string-ref (symbol->string sym) 0)) 97))
@@ -17,7 +17,7 @@
 
          ; instruction implementations
          (snd (lambda (x)
-		(set! send (append send (list (val (first x)))))
+		(set! send (cons (val (first x)) send))
 		(advance!)))
          (set (lambda (x)
 		(put! (first x) (val (second x)))
@@ -37,7 +37,7 @@
 			 (put! (first x) (car recv))
 			 (set! recv (cdr recv))
 			 (advance!)))
-		      (else send))))
+		      (else (reverse send)))))
          (jgz (lambda (x)
 		(advance-n! (if (> (val (first x)) 0)
 			        (val (second x))

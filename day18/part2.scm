@@ -72,10 +72,9 @@
              (< pos (vector-length prog))
              (begin
                (if debug (debug-print))
-               (let ((result (exec (vector-ref prog pos))))
-                 (if (eqv? result 'blocked)
-                     (reverse send)
-                     (loop)))))))))
+               (if (eqv? (exec (vector-ref prog pos)) 'blocked)
+                   (reverse send)
+                   (loop))))))))
 
 ;(include "example_part2.scm")
 (include "input.scm")

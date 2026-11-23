@@ -13,20 +13,22 @@
          (reg (lambda (x) (vector-ref state (reg->idx x))))
          (val (lambda (x) (if (number? x) x (reg x))))
          (put! (lambda (x v) (vector-set! state (reg->idx x) v)))
+         (advance! (lambda (n) (put! PC (+ (reg PC) n))))
 
          ; instruction implementations
-         (snd (lambda (x) (set! send (append send (list (val (first x))))) #f))
-         (set (lambda (x) (put! (first x) (val (second x))) #f))
-         (add (lambda (x) (put! (first x) (+ (reg (first x)) (val (second x)))) #f))
-         (mul (lambda (x) (put! (first x) (* (reg (first x)) (val (second x)))) #f))
-         (mod (lambda (x) (put! (first x) (modulo (reg (first x)) (val (second x)))) #f))
+         (snd (lambda (x) (set! send (append send (list (val (first x))))) (advance! 1) #f))
+         (set (lambda (x) (put! (first x) (val (second x))) (advance! 1) #f))
+         (add (lambda (x) (put! (first x) (+ (reg (first x)) (val (second x)))) (advance! 1) #f))
+         (mul (lambda (x) (put! (first x) (* (reg (first x)) (val (second x)))) (advance! 1) #f))
+         (mod (lambda (x) (put! (first x) (modulo (reg (first x)) (val (second x)))) (advance! 1) #f))
          (rcv (lambda (x) (cond ((not (null? recv)) 
-				  (begin 
-				    (put! (first x) (car recv))
-				    (set! recv (cdr recv))
-				    #f))
-				(else send))))
-         (jgz (lambda (x) (put! PC (+ (reg PC) (if (> (val (first x)) 0) (val (second x)) 1))) #f))
+                                  (begin 
+                                    (put! (first x) (car recv))
+                                    (set! recv (cdr recv))
+                                    (advance! 1)
+                                    #f))
+                                (else send))))
+         (jgz (lambda (x) (advance! (if (> (val (first x)) 0) (val (second x)) 1)) #f))
 
          ; instruction list
          (insns
@@ -49,7 +51,6 @@
 
          ; exec one instruction and maintain PC
          (exec (lambda (instr)
-                 (unless (eq? (car instr) 'jgz) (put! PC (+ (reg PC) 1)))
                  ((cdr (assoc (car instr) insns)) (cdr instr)))))
 
     ; execute program
@@ -58,7 +59,7 @@
         (and (>= pos 0)
              (< pos (vector-length prog))
              (begin
-	       (if debug (debug-print))
+               (if debug (debug-print))
                (or (exec (vector-ref prog pos))
                    (loop))))))))
 
@@ -78,11 +79,9 @@
   (set! cnt (+ cnt (length recv0)))
   (newline)
   (let loop ()
-      (vector-set! state0 (reg->idx PC) (- (vector-ref state0 (reg->idx PC)) 1))
       (set! recv1 (cpu-instr program state0 '() recv0 #f))
       (display recv1)
       (newline)
-      (vector-set! state1 (reg->idx PC) (- (vector-ref state1 (reg->idx PC)) 1))
       (set! recv0 (cpu-instr program state1 '() recv1 #f))
       (display recv0)
       (set! cnt (+ cnt (length recv0)))

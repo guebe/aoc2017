@@ -1,9 +1,8 @@
 (define first car)
 (define second cadr)
 
-; program counter and last-played-frequency are handled like registers
-; unique register names are used
-(define PC 'x)
+; special registers
+(define PC 'x)  ; program counter
 
 ; registers are stored in a vector - this function provides the mapping
 (define (reg->idx sym) (- (char->integer (string-ref (symbol->string sym) 0)) 97))
@@ -13,22 +12,36 @@
          (reg (lambda (x) (vector-ref state (reg->idx x))))
          (val (lambda (x) (if (number? x) x (reg x))))
          (put! (lambda (x v) (vector-set! state (reg->idx x) v)))
-         (advance! (lambda (n) (put! PC (+ (reg PC) n))))
+         (advance-n! (lambda (n) (put! PC (+ (reg PC) n))))
+         (advance! (lambda () (advance-n! 1)))
 
          ; instruction implementations
-         (snd (lambda (x) (set! send (append send (list (val (first x))))) (advance! 1) #f))
-         (set (lambda (x) (put! (first x) (val (second x))) (advance! 1) #f))
-         (add (lambda (x) (put! (first x) (+ (reg (first x)) (val (second x)))) (advance! 1) #f))
-         (mul (lambda (x) (put! (first x) (* (reg (first x)) (val (second x)))) (advance! 1) #f))
-         (mod (lambda (x) (put! (first x) (modulo (reg (first x)) (val (second x)))) (advance! 1) #f))
-         (rcv (lambda (x) (cond ((not (null? recv)) 
-                                  (begin 
-                                    (put! (first x) (car recv))
-                                    (set! recv (cdr recv))
-                                    (advance! 1)
-                                    #f))
-                                (else send))))
-         (jgz (lambda (x) (advance! (if (> (val (first x)) 0) (val (second x)) 1)) #f))
+         (snd (lambda (x)
+		(set! send (append send (list (val (first x)))))
+		(advance!)))
+         (set (lambda (x)
+		(put! (first x) (val (second x)))
+		(advance!)))
+         (add (lambda (x)
+		(put! (first x) (+ (reg (first x)) (val (second x))))
+		(advance!)))
+         (mul (lambda (x)
+		(put! (first x) (* (reg (first x)) (val (second x))))
+		(advance!)))
+         (mod (lambda (x)
+		(put! (first x) (modulo (reg (first x)) (val (second x))))
+		(advance!)))
+         (rcv (lambda (x)
+		(cond ((not (null? recv))
+		       (begin
+			 (put! (first x) (car recv))
+			 (set! recv (cdr recv))
+			 (advance!)))
+		      (else send))))
+         (jgz (lambda (x)
+		(advance-n! (if (> (val (first x)) 0)
+			        (val (second x))
+				1))))
 
          ; instruction list
          (insns
@@ -49,7 +62,7 @@
                           (write state)
                           (newline))))
 
-         ; exec one instruction and maintain PC
+         ; exec one instruction
          (exec (lambda (instr)
                  ((cdr (assoc (car instr) insns)) (cdr instr)))))
 
@@ -60,8 +73,10 @@
              (< pos (vector-length prog))
              (begin
                (if debug (debug-print))
-               (or (exec (vector-ref prog pos))
-                   (loop))))))))
+	       (let ((result (exec (vector-ref prog pos))))
+		 (if (list? result)
+		     result
+		     (loop)))))))))
 
 ;(include "example_part2.scm")
 (include "input.scm")

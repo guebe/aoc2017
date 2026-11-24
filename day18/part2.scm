@@ -1,6 +1,3 @@
-(define first car)
-(define second cadr)
-
 ; special registers
 (define PC 'x) ; program counter
 
@@ -20,54 +17,36 @@
                                      'terminated)))
          (advance! (lambda () (advance-n! 1)))
 
-         ; instruction implementations
-         (snd (lambda (x)
-                (set! send (cons (val (first x)) send))
-                (advance!)))
-         (set (lambda (x)
-                (put! (first x) (val (second x)))
-                (advance!)))
-         (add (lambda (x)
-                (put! (first x) (+ (reg (first x)) (val (second x))))
-                (advance!)))
-         (mul (lambda (x)
-                (put! (first x) (* (reg (first x)) (val (second x))))
-                (advance!)))
-         (mod (lambda (x)
-                (put! (first x) (modulo (reg (first x)) (val (second x))))
-                (advance!)))
-         (rcv (lambda (x)
-                (if (null? recv)
-                    'blocked
-                    (begin
-                      (put! (first x) (car recv))
-                      (set! recv (cdr recv))
-                      (advance!)))))
-         (jgz (lambda (x)
-                (advance-n! (if (> (val (first x)) 0)
-                                (val (second x))
-                                1))))
-
          (debug-print (lambda ()
                         (if debug
                             (let ((pos (reg PC)))
-                              (display pos)
-                              (display " ")
+                              (display pos) (display " ")
                               (write (vector-ref prog pos))
-                              (display " ")
-                              (write state)
+                              (display " ") (write state)
                               (newline)))))
 
-         ; exec one instruction
+         ; instruction implementations
          (exec (lambda (instr)
-                 (case (car instr)
-                   ((snd) (snd (cdr instr)))
-                   ((set) (set (cdr instr)))
-                   ((add) (add (cdr instr)))
-                   ((mul) (mul (cdr instr)))
-                   ((mod) (mod (cdr instr)))
-                   ((rcv) (rcv (cdr instr)))
-                   ((jgz) (jgz (cdr instr)))))))
+                 (let ((r (cadr instr))
+                       (v (if (null? (cddr instr)) '() (val (caddr instr)))))
+                   (case (car instr)
+                     ((snd) (set! send (cons (val r) send))
+                            (advance!))
+                     ((set) (put! r v)
+                            (advance!))
+                     ((add) (put! r (+ (reg r) v))
+                            (advance!))
+                     ((mul) (put! r (* (reg r) v))
+                            (advance!))
+                     ((mod) (put! r (modulo (reg r) v))
+                            (advance!))
+                     ((rcv) (if (null? recv)
+                                'blocked
+                                (begin
+                                  (put! r (car recv))
+                                  (set! recv (cdr recv))
+                                  (advance!))))
+                     ((jgz) (advance-n! (if (> (val r) 0) v 1))))))))
 
     ; execute program
     (let loop ()

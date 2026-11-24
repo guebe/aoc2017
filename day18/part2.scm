@@ -13,7 +13,11 @@
          (reg (lambda (x) (vector-ref state (reg->idx x))))
          (val (lambda (x) (if (number? x) x (reg x))))
          (put! (lambda (x v) (vector-set! state (reg->idx x) v)))
-         (advance-n! (lambda (n) (put! PC (+ (reg PC) n))))
+         (advance-n! (lambda (n) (put! PC (+ (reg PC) n))
+                                 (if (and (>= (reg PC) 0)
+                                          (< (reg PC) (vector-length prog)))
+                                     'running
+                                     'terminated)))
          (advance! (lambda () (advance-n! 1)))
 
          ; instruction implementations
@@ -45,13 +49,14 @@
                                 1))))
 
          (debug-print (lambda ()
-                        (let ((pos (reg PC)))
-                          (display pos)
-                          (display " ")
-                          (write (vector-ref prog pos))
-                          (display " ")
-                          (write state)
-                          (newline))))
+                        (if debug
+                            (let ((pos (reg PC)))
+                              (display pos)
+                              (display " ")
+                              (write (vector-ref prog pos))
+                              (display " ")
+                              (write state)
+                              (newline)))))
 
          ; exec one instruction
          (exec (lambda (instr)
@@ -66,26 +71,23 @@
 
     ; execute program
     (let loop ()
-      (let ((pos (reg PC)))
-        (and (>= pos 0)
-             (< pos (vector-length prog))
-             (begin
-               (if debug (debug-print))
-               (if (eqv? (exec (vector-ref prog pos)) 'blocked)
-                   (reverse send)
-                   (loop))))))))
+      (begin
+        (debug-print)
+        (case (exec (vector-ref prog (reg PC)))
+          ((blocked) (reverse send))
+          ((terminated) 'terminated)
+          ((running) (loop)))))))
 
 ;(include "example_part2.scm")
 (include "input.scm")
 (let ((state0 (make-vector 26 0))
-      (state1 (make-vector 26 0))
-      (recv '())
-      (cnt 0))
+      (state1 (make-vector 26 0)))
   (vector-set! state1 (reg->idx 'p) 1)
-  (let loop ()
-      (set! recv (cpu-instr program state0 recv #f))
-      (set! recv (cpu-instr program state1 recv #f))
-      (set! cnt (+ cnt (length recv)))
-      (if (not (null? recv)) (loop)))
-  (display cnt)
-  (newline))
+  (let loop ((queue '()) (cnt 0))
+    (let ((queue (cpu-instr program state1 (cpu-instr program state0 queue #f) #f)))
+      (if (not (null? queue))
+          (loop queue (+ cnt (length queue)))
+          (begin
+            (display cnt)
+            (newline))))))
+

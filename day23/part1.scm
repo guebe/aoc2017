@@ -32,13 +32,12 @@
 	 (instruction (vector-ref program pc))
          (result (apply exec instruction machine))
          (new-pc (car result)))
-      (if #t (debug-print pc instruction result))
+      (if #f (debug-print pc instruction result))
       (if (or (= pc new-pc) (< new-pc 0) (>= new-pc (vector-length program)))
 	  result
 	  (run program result))))
 
-;(include "example_part2.scm")
 (include "input.scm")
 (display (caddr (run program (list 0 '() 0))))
-(display (reg-ref (cadr (run program (list 0 (list (cons 'a 1)) 0))) 'h))
+;(display (reg-ref (cadr (run program (list 0 (list (cons 'a 1)) 0))) 'h))
 (newline)
